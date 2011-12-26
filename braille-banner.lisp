@@ -18,46 +18,48 @@
               (atom (cons head tail))
               (cons (append (flatten head) tail)) )))))
 
-(defun bits-to-braille-name1 (bits)
-  (let ((res '() ))
-    (dolist (e bits)
-      (let ((i 0)
-            (ans '() ) )
-        (dolist (e e)
-          (PUSH
-           (case i
-             (3 (case e
-                  (0 0)
-                  (1 8)
-                  (2 7)
-                  (3 (list 7 8)) ))
-             (otherwise
-              (ecase e
-                (0 0)
-                (1 (+ 3 (1+ i)))
-                (2 (1+ i))
-                (3 (list
-                    (+ 3 (1+ i))
-                    (1+ i) )))))
-           ANS )
-          (incf i) )
-        (push (nreverse ans)
-              res )))
-    (nreverse res)) )
+;;; dots
+(defun dotsp (list)
+  (and (consp list)
+       (every (lambda (x)
+                (typep x '(and (integer 0 8))))
+              list)))
 
-(test bits-to-braille-name1
-  (is (equal (bits-to-braille-name1
-              '((0 0 0 0) (0 0 0 0) (3 1 1 2) (0 3 0 0)
-                (0 3 2 1) (0 3 0 2) (0 3 1 0) (0 0 0 0)))
-             '((0 0 0 0) (0 0 0 0) ((4 1) 5 6 7)
-               (0 (5 2) 0 0) (0 (5 2) 3 8) (0 (5 2) 0 7)
-               (0 (5 2) 6 0) (0 0 0 0)))))
+(deftype dots ()
+  '(satisfies dotsp))
+
+(defun bits-to-dots (bits)
+  (let ((i 0)
+        (ans '() ) )
+    (dolist (e bits)
+      (PUSH
+       (case i
+         (3 (case e
+              (0 0)
+              (1 8)
+              (2 7)
+              (3 (list 7 8)) ))
+         (otherwise
+          (ecase e
+            (0 0)
+            (1 (+ 3 (1+ i)))
+            (2 (1+ i))
+            (3 (list
+                (+ 3 (1+ i))
+                (1+ i) )))))
+       ANS )
+      (incf i) )
+    (flatten ans)))
+
+(test bits-to-dots
+  (is (equal (bits-to-dots '(0 3 2 1))
+             '(8 3 5 2 0))))
 
 (defun list-to-braille-name (list)
   (let ((ans (map 'string
                   (lambda (e)
                     (character (princ-to-string e)))
-                  (sort (flatten (remove 0 list)) #'<))))
+                  (sort (remove 0 list) #'<))))
     (if (string= "" ans)
         #\BRAILLE_PATTERN_BLANK
         (name-char
@@ -65,17 +67,18 @@
 
 (test list-to-braille-name
   (is (equal (mapcar #'list-to-braille-name
-                     '((0 0 0 0) (0 0 0 0) ((4 1) 5 6 7)
-                       (0 (5 2) 0 0) (0 (5 2) 3 8) (0 (5 2) 0 7)
-                       (0 (5 2) 6 0) (0 0 0 0)))
+                     '((0 0 0 0) (0 0 0 0) (7 6 5 4 1) (0 0 5 2 0)
+               (8 3 5 2 0) (7 0 5 2 0) (0 6 5 2 0) (0 0 0 0)))
              '(#\BRAILLE_PATTERN_BLANK #\BRAILLE_PATTERN_BLANK
                #\BRAILLE_PATTERN_DOTS-14567 #\BRAILLE_PATTERN_DOTS-25
                #\BRAILLE_PATTERN_DOTS-2358 #\BRAILLE_PATTERN_DOTS-257
                #\BRAILLE_PATTERN_DOTS-256 #\BRAILLE_PATTERN_BLANK))))
 
 (defun bits-to-braille-name (bits)
-  (mapcar #'list-to-braille-name
-          (bits-to-braille-name1 bits)))
+  (mapcar (lambda (x)
+            (list-to-braille-name
+             (bits-to-dots x)))
+          bits))
 
 (test bits-to-braille-name
   (is (equal (mapcar #'bits-to-braille-name
@@ -145,17 +148,6 @@
                        (8712 2016 14912 384)
                        (1760 30748)))
              '("⠀⠲⡒⢖⠒⡹⠀⠀" "⠠⢫⠹⣙⣫⠩⡋⠀" "⠀⠥⠔⢗⡲⠂⠁⠀" "⠐⠒⠊⠁⠉⠑⠒⠀"))))
-
-#|(defun bdf-to-braille (bdf-string)
-  (let ((ans '())
-        (next 0) )
-    (dotimes (i 14)
-      (multiple-value-bind (n e)
-                           (parse-integer bdf-string :radix 16)
-        (push n ans)
-        (setq next (1+ e)) ))
-    (mapcar #'hexs-to-braille-string
-            (sl:group (nreverse ans) 4) )))|#
 
 (defun euc-octets-to-jis-code (octets)
   ;; http://d.hatena.ne.jp/snaka72/20100710/SUMMARY_ABOUT_JAPANESE_CHARACTER_CODE
