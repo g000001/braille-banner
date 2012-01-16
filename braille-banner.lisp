@@ -7,7 +7,7 @@
 (in-suite braille-banner)
 
 (defvar *k14*
-  (kl:read-file-to-strings #p"k14.bdf"))
+  (kl:read-file-to-strings (asdf:system-relative-pathname :braille-banner "k14.bdf")))
 
 ;;; borrowed by on lisp
 (defun group (source n)
@@ -188,6 +188,14 @@
                         8712 2016 14912 384 1760 30748)))
              '("⠀⠲⡒⢖⠒⡹⠀⠀" "⠠⢫⠹⣙⣫⠩⡋⠀" "⠀⠥⠔⢗⡲⠂⠁⠀" "⠐⠒⠊⠁⠉⠑⠒⠀"))))
 
+(defun baikaku-num (num)
+  (values
+   (parse-integer
+    (format nil
+            "~{~A~:*~A~}"
+            (coerce (format nil "~B" num) 'list))
+    :radix 2)))
+
 (defun euc-octets-to-jis-code (octets)
   ;; http://d.hatena.ne.jp/snaka72/20100710/SUMMARY_ABOUT_JAPANESE_CHARACTER_CODE
   (let ((ku (aref octets 0))
@@ -222,20 +230,67 @@
              '(48 16336 4624 2336 16380 9608 21584 5064
                8712 2016 14912 384 1760 30748))))
 
-(defun char-to-braille-letter (char)
+(defun char-to-braille-letter (char &optional (filter #'values))
   (mapcar #'font-line-to-braille-letter-line
           (font-data-to-font-lines
-           (char-to-font-data char))))
+           (funcall filter
+                    (char-to-font-data char)))))
+
+
+(mapcar #'font-line-to-braille-letter-line
+        (font-data-to-font-lines
+         '(0 4095 780 195 4095 3123 13104 783 3084 63 4044 3 60 16320)))
+
+
+(mapcar (lambda (x)
+          (list (baikaku-num (ldb (byte 8 0) x))
+                (baikaku-num (ldb (byte 8 8) x))) )
+        '(48 16336 4624 2336 16380 9608 21584 5064
+          8712 2016 14912 384 1760 30748))
+
+(defun char-to-braille-double-width-letter (char &optional (filter #'values))
+  (let ((dw (mapcar (lambda (x)
+                      (mapcar (lambda (x)
+                                (list (baikaku-num (ldb (byte 8 0) x))
+                                      (baikaku-num (ldb (byte 8 8) x))))
+                              x))
+                    (font-data-to-font-lines
+                     (funcall filter
+                              (char-to-font-data char))))))
+    (mapcar (lambda (e)
+              (concatenate 'string
+                           (font-line-to-braille-letter-line
+                            (mapcar #'second e))
+                           (font-line-to-braille-letter-line
+                            (mapcar #'first e))))
+            dw)))
+
+(test char-to-braille-double-width-letter
+  (is (equal (char-to-braille-double-width-letter #\あ)
+             '("⠀⠀⠀⣀⣀⣉⣶⣀⠤⠤⠀⠀⠀⠀⠀⠀"
+               "⠀⠀⠀⠀⣀⣿⠤⣤⠿⠤⠤⣀⠀⠀⠀⠀"
+               "⠀⠀⣶⠉⣀⠭⣶⠉⠀⠀⠀⣀⠿⠀⠀⠀"
+               "⠀⠀⠀⠉⠀⠀⠀⠀⠀⠉⠉⠀⠀⠀⠀⠀"))))
 
 (test char-to-braille-letter
   (is (equal (char-to-braille-letter #\愛)
              '("⠀⠲⡒⢖⠒⡹⠀⠀" "⠠⢫⠹⣙⣫⠩⡋⠀" "⠀⠥⠔⢗⡲⠂⠁⠀" "⠐⠒⠊⠁⠉⠑⠒⠀"))))
 
-(defun string-to-braille (str)
+
+(defun rotate-180 (font-data)
+  (mapcar (lambda (x)
+            (parse-integer
+             (reverse (format nil "~16,'0,B" x))
+             :radix 2))
+          (reverse font-data)))
+
+(defun string-to-braille (str &optional (filter #'values))
   (fare-utils:join-strings
    (apply #'mapcar (lambda (&rest e)
                      (apply #'concatenate 'string e))
-          (map 'list #'char-to-braille-letter str))
+          (map 'list (lambda (c)
+                       (char-to-braille-letter c filter))
+               str))
    :separator #\Newline))
 
 (test string-to-braille
@@ -244,4 +299,14 @@
 ⠐⣚⣚⡒⣖⣒⡃⠀⠐⣚⣚⡒⣖⣒⡃⠀⠐⣚⣚⡒⣖⣒⡃⠀⠐⣚⣚⡒⣖⣒⡃⠀
 ⠀⣗⣒⡇⣗⣒⡂⠀⠀⣗⣒⡇⣗⣒⡂⠀⠀⣗⣒⡇⣗⣒⡂⠀⠀⣗⣒⡇⣗⣒⡂⠀
 ⠀⠃⠐⠃⠑⠒⠚⠀⠀⠃⠐⠃⠑⠒⠚⠀⠀⠃⠐⠃⠑⠒⠚⠀⠀⠃⠐⠃⠑⠒⠚⠀")))
+
+(defun string-to-double-width-braille (str &optional (filter #'values))
+  (fare-utils:join-strings
+   (apply #'mapcar (lambda (&rest e)
+                     (apply #'concatenate 'string e))
+          (map 'list
+               (lambda (c)
+                 (char-to-braille-double-width-letter c filter)) str))
+   :separator #\Newline))
+
 ;;; eof
