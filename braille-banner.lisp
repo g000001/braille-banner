@@ -77,18 +77,19 @@
                     (character (princ-to-string e)))
                   (sort (remove 0 dots) #'<))))
     (if (string= "" ans)
-        #\BRAILLE_PATTERN_BLANK
-        (name-char
+        (character-named "BRAILLE_PATTERN_BLANK")
+        (character-named
          (format nil "BRAILLE_PATTERN_DOTS-~A" ans)))))
 
 (test dots-to-braille-char
   (is (equal (mapcar #'dots-to-braille-char
                      '((0 0 0 0) (0 0 0 0) (7 6 5 4 1) (0 0 5 2 0)
                (8 3 5 2 0) (7 0 5 2 0) (0 6 5 2 0) (0 0 0 0)))
-             '(#\BRAILLE_PATTERN_BLANK #\BRAILLE_PATTERN_BLANK
-               #\BRAILLE_PATTERN_DOTS-14567 #\BRAILLE_PATTERN_DOTS-25
-               #\BRAILLE_PATTERN_DOTS-2358 #\BRAILLE_PATTERN_DOTS-257
-               #\BRAILLE_PATTERN_DOTS-256 #\BRAILLE_PATTERN_BLANK))))
+             (mapcar #'character-named 
+                     '("BRAILLE_PATTERN_BLANK" "BRAILLE_PATTERN_BLANK"
+                       "BRAILLE_PATTERN_DOTS-14567" "BRAILLE_PATTERN_DOTS-25"
+                       "BRAILLE_PATTERN_DOTS-2358" "BRAILLE_PATTERN_DOTS-257"
+                       "BRAILLE_PATTERN_DOTS-256" "BRAILLE_PATTERN_BLANK")))))
 
 (declaim (ftype (function (bits) character)
                 bits-to-braille-char))
@@ -120,23 +121,27 @@
                         (2 3 2 1) (0 1 2 0) (2 0 3 0) (0 0 0 0))
                        ((0 0) (0 3) (2 1) (3 0)
                         (2 0) (1 2) (0 3) (0 1))))
-             '((#\BRAILLE_PATTERN_BLANK #\BRAILLE_PATTERN_BLANK
-                #\BRAILLE_PATTERN_DOTS-14567 #\BRAILLE_PATTERN_DOTS-25
-                #\BRAILLE_PATTERN_DOTS-2358 #\BRAILLE_PATTERN_DOTS-257
-                #\BRAILLE_PATTERN_DOTS-256 #\BRAILLE_PATTERN_BLANK)
-               (#\BRAILLE_PATTERN_BLANK #\BRAILLE_PATTERN_DOTS-1247
-                #\BRAILLE_PATTERN_DOTS-146 #\BRAILLE_PATTERN_DOTS-124678
-                #\BRAILLE_PATTERN_DOTS-14578 #\BRAILLE_PATTERN_DOTS-1456
-                #\BRAILLE_PATTERN_DOTS-12468 #\BRAILLE_PATTERN_DOTS-6)
-               (#\BRAILLE_PATTERN_BLANK #\BRAILLE_PATTERN_DOTS-1
-                #\BRAILLE_PATTERN_DOTS-2 #\BRAILLE_PATTERN_DOTS-2567
-                #\BRAILLE_PATTERN_DOTS-12358 #\BRAILLE_PATTERN_DOTS-35
-                #\BRAILLE_PATTERN_DOTS-136 #\BRAILLE_PATTERN_BLANK)
-               (#\BRAILLE_PATTERN_BLANK #\BRAILLE_PATTERN_DOTS-25
-                #\BRAILLE_PATTERN_DOTS-15 #\BRAILLE_PATTERN_DOTS-14
-                #\BRAILLE_PATTERN_DOTS-1 #\BRAILLE_PATTERN_DOTS-24
-                #\BRAILLE_PATTERN_DOTS-25 #\BRAILLE_PATTERN_DOTS-5))
-             )))
+             (fare-utils:cons-tree-map #'character-named
+                          '(("BRAILLE_PATTERN_BLANK"
+ "BRAILLE_PATTERN_BLANK" "BRAILLE_PATTERN_DOTS-14567"
+                             "BRAILLE_PATTERN_DOTS-25" "BRAILLE_PATTERN_DOTS-2358"
+                             "BRAILLE_PATTERN_DOTS-257" "BRAILLE_PATTERN_DOTS-256"
+                             "BRAILLE_PATTERN_BLANK")
+                            ("BRAILLE_PATTERN_BLANK"
+                             "BRAILLE_PATTERN_DOTS-1247"
+                             "BRAILLE_PATTERN_DOTS-146" "BRAILLE_PATTERN_DOTS-124678"
+                             "BRAILLE_PATTERN_DOTS-14578" "BRAILLE_PATTERN_DOTS-1456"
+                             "BRAILLE_PATTERN_DOTS-12468" "BRAILLE_PATTERN_DOTS-6")
+                            ("BRAILLE_PATTERN_BLANK"
+                             "BRAILLE_PATTERN_DOTS-1" "BRAILLE_PATTERN_DOTS-2"
+                             "BRAILLE_PATTERN_DOTS-2567" "BRAILLE_PATTERN_DOTS-12358"
+                             "BRAILLE_PATTERN_DOTS-35" "BRAILLE_PATTERN_DOTS-136"
+                             "BRAILLE_PATTERN_BLANK")
+                            ("BRAILLE_PATTERN_BLANK"
+                             "BRAILLE_PATTERN_DOTS-25" "BRAILLE_PATTERN_DOTS-15"
+                             "BRAILLE_PATTERN_DOTS-14" "BRAILLE_PATTERN_DOTS-1" "BRAILLE_PATTERN_DOTS-24"
+                             "BRAILLE_PATTERN_DOTS-25" "BRAILLE_PATTERN_DOTS-5"))))))
+
 
 (defun font-data-to-font-lines (font-data)
   (group font-data 4))

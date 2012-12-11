@@ -7,4 +7,5 @@
   (:export :string-to-braille))
 
 (defpackage :braille-banner.internal
-  (:use :braille-banner :cl :fiveam))
+  (:use :braille-banner :cl :fiveam
+        :cl-unicode))

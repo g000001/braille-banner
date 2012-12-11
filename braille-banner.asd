@@ -7,7 +7,8 @@
   :depends-on (:fiveam
                :kmrcl
                :babel
-               :fare-utils)
+               :fare-utils
+               :cl-unicode)
   :components ((:file "package")
                (:file "braille-banner")))
 
