@@ -9,7 +9,7 @@
 (defvar *k14*
   (kl:read-file-to-strings (asdf:system-relative-pathname :braille-banner "k14.bdf")))
 
-;;; borrowed by on lisp
+;;; borrowed from "on lisp"
 (defun group (source n)
   "groups every n elements together into new sublists.
    e.g. (group '(1 a 2 b) 2) -> ((1 a) (2 b))"
@@ -23,16 +23,32 @@
 	(rec source nil)
 	nil)))
 
-;;; bits
+
+(test group
+  (is (equal '((1 2) (3 4)) 
+             (group '(1 2 3 4) 2)))
+  (signals (error) (group '(8 8 8 8) 0)))
+
+
 (defun bitsp (list)
   (and (listp list)
        ;; (= 4 (length list))
        (every (lambda (x)
-                (typep x '(and (integer 0 3))))
+                (typep x '(integer 0 3)))
               list)))
 
+;;; bits
 (deftype bits ()
   '(satisfies bitsp))
+
+(test bits
+  (is-true (typep '() 'bits))
+  (is-false (typep '(a) 'bits))
+  (is-true (typep '(0 0 0 0) 'bits))
+  (is-true (typep '(0 0 0 0 0) 'bits))
+  (is-true (typep '(3 3 3 3) 'bits))
+  (is-false (typep '(4 4 4 4) 'bits))
+  (is-false (typep 'a 'bits)))
 
 ;;; dots
 (defun dotsp (list)
@@ -68,7 +84,7 @@
   (is (null (set-difference (bits-to-dots '(0 3 2 1))
                             '(8 3 5 2 0)))))
 
-(declaim (ftype (function (dots) character)
+(declaim (ftype (function (dots) (values character &optional))
                 dots-to-braille-char))
 
 (defun dots-to-braille-char (dots)
@@ -241,17 +257,21 @@
            (funcall filter
                     (char-to-font-data char)))))
 
-
-(mapcar #'font-line-to-braille-letter-line
-        (font-data-to-font-lines
-         '(0 4095 780 195 4095 3123 13104 783 3084 63 4044 3 60 16320)))
-
-
-(mapcar (lambda (x)
+(test double-width
+  (is (equal (mapcar #'font-line-to-braille-letter-line
+                     (font-data-to-font-lines
+                      '(0 4095 780 195 4095 3123 13104 783
+                        3084 63 4044 3 60 16320)))
+             '("⠀⠀⠒⠶⣒⠒⠶⣒" "⠀⠤⠛⣭⠉⠿⣉⣛" "⠀⠀⠭⠤⠤⠒⠿⣒" "⠀⠒⠒⠒⠒⠉⠉⠀")))
+  (is (mapcar (lambda (x)
           (list (baikaku-num (ldb (byte 8 0) x))
                 (baikaku-num (ldb (byte 8 8) x))) )
-        '(48 16336 4624 2336 16380 9608 21584 5064
-          8712 2016 14912 384 1760 30748))
+              '(48 16336 4624 2336 16380 9608 21584 5064
+                8712 2016 14912 384 1760 30748))
+      '((3840 0) (62208 4095) (768 780) (3072 195) (65520 4095) (49344 3123)
+        (13056 13104) (61632 783) (192 3084) (64512 63) (12288 4044) (49152 3)
+        (64512 60) (1008 16320))))
+
 
 (defun char-to-braille-double-width-letter (char &optional (filter #'values))
   (let ((dw (mapcar (lambda (x)
@@ -313,5 +333,6 @@
                (lambda (c)
                  (char-to-braille-double-width-letter c filter)) str))
    :separator #\Newline))
+
 
 ;;; eof
